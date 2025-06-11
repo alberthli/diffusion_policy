@@ -1,3 +1,34 @@
+# Fork README
+
+This is a fork of the original diffusion policy repo. Currently using the fork to adapt this code to my use-case.
+
+There are a couple of critical parts that I'm running as a "hello world":
+1. Real-world data collection
+2. Training of vanilla diffusion policies
+    a. State-based
+    b. Vision-based
+3. Deployment on hardware
+
+## Installation
+Use `pixi`:
+```bash
+pixi shell -e dev
+```
+
+## 1. Real-World Data Collection
+
+TODO: fill out.
+
+## 2. Training
+
+TODO: fill out.
+
+## 3. Deployment
+
+TODO: fill out.
+
+# BELOW THIS HEADER IS THE ORIGINAL README
+
 # Diffusion Policy
 
 [[Project page]](https://diffusion-policy.cs.columbia.edu/)
