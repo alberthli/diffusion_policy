@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name              = "diffusion_policy"
+version           = "0.0.1"
+description       = "Fork of diffusion policy repo"
+readme            = "README.md"
+license           = { file = "LICENSE" }
+requires-python   = ">=3.10"
+
+dependencies = [
+    "av",
+    "click",
+    "cython",
+    "diffusers",
+    "dill",
+    "einops",
+    "gym",
+    "h5py",
+    "hydra-core",
+    "imagecodecs",
+    "matplotlib",
+    "numba",
+    "numcodecs",
+    "numpy",
+    "opencv-python",
+    "plotly",
+    "pymunk",
+    "pypose",
+    "ray[default,tune]",
+    "scikit-image",
+    "scikit-video",
+    "scipy",
+    "shapely",
+    "termcolor",
+    "threadpoolctl",
+    "tqdm",
+    "wandb",
+    "zarr",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["diffusion_policy"]
+
+[project.optional-dependencies]
+dev = [
+    # "cyclonedds-nightly",
+    "franky-control",
+    "hidapi",
+]
+
+[tool.pixi.system-requirements]
+cuda = "12.9"
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.dependencies]
+python = "3.13.*"
+
+[tool.pixi.pypi-dependencies]
+diffusion_policy = { path = ".", editable = true }
+pytorch3d = { url = "https://github.com/MiroPsota/torch_packages_builder/releases/download/pytorch3d-0.7.8/pytorch3d-0.7.8%2Bpt2.7.0cu128-cp313-cp313-linux_x86_64.whl" }
+torch = { index="https://download.pytorch.org/whl/cu128" }
+torchvision = { index="https://download.pytorch.org/whl/cu128" }
+
+[tool.pixi.feature.hardware.pypi-dependencies]
+pyzed = { url="http://download.stereolabs.com/zedsdk/5.0/whl/linux_x86_64/pyzed-5.0-cp313-cp313-linux_x86_64.whl" }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+hardware = { features = ["hardware"], solve-group = "default" }
+dev = { features = ["dev", "hardware"], solve-group = "default" }
