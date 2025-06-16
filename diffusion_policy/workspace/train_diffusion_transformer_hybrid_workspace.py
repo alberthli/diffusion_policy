@@ -31,6 +31,18 @@ from diffusion_policy.model.common.lr_scheduler import get_scheduler
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
+def build_dataloader(dataset: BaseImageDataset, cfg_dataloader: OmegaConf) -> DataLoader:
+    """Build a DataLoader for the given dataset using the provided configuration."""
+    # Convert to regular dict to avoid struct mode issues
+    cfg_dict = OmegaConf.to_container(cfg_dataloader, resolve=True)
+
+    collate_fn_cfg = cfg_dict.pop("collate_fn", None)
+    if collate_fn_cfg is not None:
+        collate_fn = hydra.utils.instantiate(collate_fn_cfg)
+        return DataLoader(dataset, collate_fn=collate_fn, **cfg_dict)
+    else:
+        return DataLoader(dataset, **cfg_dict)
+
 class TrainDiffusionTransformerHybridWorkspace(BaseWorkspace):
     include_keys = ['global_step', 'epoch']
 
@@ -70,13 +82,12 @@ class TrainDiffusionTransformerHybridWorkspace(BaseWorkspace):
         # configure dataset
         dataset: BaseImageDataset
         dataset = hydra.utils.instantiate(cfg.task.dataset)
-        assert isinstance(dataset, BaseImageDataset)
-        train_dataloader = DataLoader(dataset, **cfg.dataloader)
+        train_dataloader = build_dataloader(dataset, cfg.dataloader)
         normalizer = dataset.get_normalizer()
 
         # configure validation dataset
         val_dataset = dataset.get_validation_dataset()
-        val_dataloader = DataLoader(val_dataset, **cfg.val_dataloader)
+        val_dataloader = build_dataloader(val_dataset, cfg.val_dataloader)
 
         self.model.set_normalizer(normalizer)
         if cfg.training.use_ema:
