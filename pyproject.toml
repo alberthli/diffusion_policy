@@ -8,7 +8,7 @@ version           = "0.0.1"
 description       = "Fork of diffusion policy repo"
 readme            = "README.md"
 license           = { file = "LICENSE" }
-requires-python   = ">=3.10"
+requires-python   = ">3.10"
 
 dependencies = [
     "av",
@@ -23,13 +23,14 @@ dependencies = [
     "imagecodecs",
     "matplotlib",
     "numba",
-    "numcodecs",
     "numpy",
+    "omegaconf",
     "opencv-python",
     "plotly",
     "pymunk",
     "pypose",
     "ray[default,tune]",
+    "robomimic",
     "scikit-image",
     "scikit-video",
     "scipy",
@@ -49,7 +50,6 @@ packages = ["diffusion_policy"]
 
 [project.optional-dependencies]
 dev = [
-    # "cyclonedds-nightly",
     "franky-control",
     "hidapi",
 ]
