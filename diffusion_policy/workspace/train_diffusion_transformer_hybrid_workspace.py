@@ -8,6 +8,7 @@ if __name__ == "__main__":
     os.chdir(ROOT_DIR)
 
 import os
+import requests
 import hydra
 import torch
 from omegaconf import OmegaConf
@@ -158,6 +159,7 @@ class TrainDiffusionTransformerHybridWorkspace(BaseWorkspace):
             cfg.training.sample_every = 1
 
         # training loop
+        min_val_loss = float('inf')
         log_path = os.path.join(self.output_dir, 'logs.json.txt')
         with JsonLogger(log_path) as json_logger:
             for local_epoch_idx in range(cfg.training.num_epochs):
@@ -276,14 +278,56 @@ class TrainDiffusionTransformerHybridWorkspace(BaseWorkspace):
                     for key, value in step_log.items():
                         new_key = key.replace('/', '_')
                         metric_dict[new_key] = value
-                    
-                    # We can't copy the last checkpoint here
-                    # since save_checkpoint uses threads.
-                    # therefore at this point the file might have been empty!
+
+                    # === top-k checkpointing ===
                     topk_ckpt_path = topk_manager.get_ckpt_path(metric_dict)
 
                     if topk_ckpt_path is not None:
                         self.save_checkpoint(path=topk_ckpt_path)
+
+                    # === full archive checkpointing ===
+                    full_ckpt_path = pathlib.Path(self.output_dir).joinpath(
+                        "checkpoints", f"epoch={self.epoch:03d}.ckpt"
+                    )
+
+                    # save synchronously to avoid wandb uploading empty files
+                    using_wandb = wandb_run is not None
+                    self.save_checkpoint(path=full_ckpt_path, use_thread=False if using_wandb else True)
+
+                    # log checkpoint as wandb artifact
+                    if using_wandb:
+                        api = wandb.Api()
+                        entity = wandb_run.entity
+                        project = wandb_run.project
+                        id = wandb_run.id
+                        artifact_name = f"model-{id}"
+                        artifact = wandb.Artifact(
+                            name=artifact_name,
+                            type="model",
+                            metadata={"epoch": self.epoch, **metric_dict}
+                        )
+                        artifact.add_file(str(full_ckpt_path))
+                        if val_loss < min_val_loss:
+                            min_val_loss = val_loss
+                            wandb_run.log_artifact(artifact, aliases=["best", "latest"])
+                        else:
+                            wandb_run.log_artifact(artifact, aliases=["latest"])
+
+                        # delete all artifacts that are not "best" or "latest" - this will lag by 1 artifact due to
+                        # upload time
+                        print(f"Cleaning up old versions of artifact: {artifact_name}")
+                        versions = api.artifacts(
+                            type_name="model",
+                            name=f"{entity}/{project}/{artifact_name}",
+                        )
+                        try:
+                            for version in versions:
+                                if "best" not in version.aliases and "latest" not in version.aliases:
+                                    # ensure the version is not still in the process of being committed
+                                    if version.state == 'COMMITTED':
+                                        version.delete()
+                        except requests.exceptions.HTTPError:  # case: artifact hasn't uploaded yet, skip
+                            pass
                 # ========= eval end for this epoch ==========
                 policy.train()
 
