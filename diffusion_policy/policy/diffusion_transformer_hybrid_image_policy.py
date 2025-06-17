@@ -196,7 +196,7 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             generator=generator)
     
         # set step values
-        scheduler.set_timesteps(self.num_inference_steps)
+        scheduler.set_timesteps(self.num_inference_steps, device=trajectory.device)
 
         for t in scheduler.timesteps:
             # 1. apply conditioning
